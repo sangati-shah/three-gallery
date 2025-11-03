@@ -22,7 +22,7 @@ export const galleryData = [
       { path: process.env.PUBLIC_URL + '/gallery/ColoringBook/jellyfishes.jpg', name: 'Jellyfishes' },
       { path: process.env.PUBLIC_URL + '/gallery/ColoringBook/lalQila.jpg', name: 'Lal Qila' },
       { path: process.env.PUBLIC_URL + '/gallery/ColoringBook/lotus.jpg', name: 'Lotus' },
-      { path: process.env.PUBLIC_URL + '/gallery/ColoringBook/Owl.jpg', name: 'Owl' },
+      { path: process.env.PUBLIC_URL + '/gallery/ColoringBook/owl.jpg', name: 'Owl' },
       { path: process.env.PUBLIC_URL + '/gallery/ColoringBook/rose.jpg', name: 'Rose' },
       { path: process.env.PUBLIC_URL + '/gallery/ColoringBook/sara.jpg', name: 'Girl' },
       { path: process.env.PUBLIC_URL + '/gallery/ColoringBook/violet.jpg', name: 'Violet' },
