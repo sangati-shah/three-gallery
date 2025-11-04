@@ -2,6 +2,7 @@
 export const galleryData = [
   {
     name: "Watching Waves",
+    wallColor: 0x1a3a5c, // Navy Blue
     images: [
       { path: process.env.PUBLIC_URL + '/gallery/WatchingWaves/crash.jpg', name: 'Crash' },
       { path: process.env.PUBLIC_URL + '/gallery/WatchingWaves/erosion.jpg', name: 'Erosion' },
@@ -17,6 +18,7 @@ export const galleryData = [
   },
   {
     name: "Coloring Book",
+    wallColor: 0x8b2942, // Maroon
     images: [
       { path: process.env.PUBLIC_URL + '/gallery/ColoringBook/hydrangeas.jpg', name: 'Hydrangeas' },
       { path: process.env.PUBLIC_URL + '/gallery/ColoringBook/jellyfishes.jpg', name: 'Jellyfishes' },
@@ -32,6 +34,7 @@ export const galleryData = [
   },
   {
     name: "That Which Remains",
+    wallColor: 0xd4a017, // Golden Yellow
     images: [
       { path: process.env.PUBLIC_URL + '/gallery/Misc/aspen.jpg', name: 'Aspen' },
       { path: process.env.PUBLIC_URL + '/gallery/Misc/bird.jpg', name: 'Bird' },

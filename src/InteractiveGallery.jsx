@@ -143,8 +143,7 @@ const InteractiveGallery = () => {
     if (!mountRef.current || floors.length === 0) return;
 
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0xf5f5f5);
-    scene.fog = new THREE.Fog(0xf5f5f5, 15, 30);
+    scene.background = new THREE.Color(0xf8f8f8);
     sceneRef.current = scene;
 
     const camera = new THREE.PerspectiveCamera(
@@ -162,37 +161,47 @@ const InteractiveGallery = () => {
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.0;
+    renderer.toneMappingExposure = 1.2;
     mountRef.current.appendChild(renderer.domElement);
     rendererRef.current = renderer;
 
-    // Ambient light
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+    // Brighter ambient light
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.8)
     scene.add(ambientLight);
 
-    // Main ceiling light
-    const mainLight = new THREE.SpotLight(0xffffff, 1.0);
-    mainLight.position.set(0, 5, 0);
-    mainLight.angle = Math.PI / 3;
-    mainLight.penumbra = 0.5;
+    // Main ceiling lights - much brighter
+    const mainLight = new THREE.SpotLight(0xffffff, 2.0);
+    mainLight.position.set(0, 8, 0);
+    mainLight.angle = Math.PI / 2.5;
+    mainLight.penumbra = 0.3;
     mainLight.castShadow = true;
     mainLight.shadow.mapSize.width = 2048;
     mainLight.shadow.mapSize.height = 2048;
     mainLight.shadow.camera.near = 0.5;
-    mainLight.shadow.camera.far = 15;
+    mainLight.shadow.camera.far = 20;
     mainLight.shadow.bias = -0.0001;
     scene.add(mainLight);
 
-    // Additional ceiling lights
-    const light2 = new THREE.SpotLight(0xffffff, 0.4);
-    light2.position.set(5, 5, 5);
+    // Additional bright ceiling lights
+    const light2 = new THREE.SpotLight(0xffffff, 1.5);
+    light2.position.set(5, 7, 5);
     light2.castShadow = true;
     scene.add(light2);
 
-    const light3 = new THREE.SpotLight(0xffffff, 0.4);
-    light3.position.set(-5, 5, -5);
+    const light3 = new THREE.SpotLight(0xffffff, 1.5);
+    light3.position.set(-5, 7, -5);
     light3.castShadow = true;
     scene.add(light3);
+
+    // const light4 = new THREE.SpotLight(0xffffff, 1.5);
+    // light4.position.set(5, 7, -5);
+    // light4.castShadow = true;
+    // scene.add(light4);
+
+    // const light5 = new THREE.SpotLight(0xffffff, 1.5);
+    // light5.position.set(-5, 7, 5);
+    // light5.castShadow = true;
+    // scene.add(light5);
 
     // Floor
     const floorGeometry = new THREE.PlaneGeometry(20, 20);
@@ -208,10 +217,11 @@ const InteractiveGallery = () => {
     floor.receiveShadow = true;
     scene.add(floor);
 
-    // Walls
+    // Bold colored walls
+    const wallColor = galleryData[currentFloor].wallColor;
     const wallMaterial = new THREE.MeshStandardMaterial({ 
-      color: 0xffffff,
-      roughness: 0.95,
+      color: wallColor,
+      roughness: 0.85,
       metalness: 0.0
     });
 
@@ -225,7 +235,7 @@ const InteractiveGallery = () => {
 
     const southWall = new THREE.Mesh(
       new THREE.PlaneGeometry(20, 4),
-      wallMaterial
+      wallMaterial.clone()
     );
     southWall.position.set(0, 2, 10);
     southWall.rotation.y = Math.PI;
@@ -234,7 +244,7 @@ const InteractiveGallery = () => {
 
     const eastWall = new THREE.Mesh(
       new THREE.PlaneGeometry(20, 4),
-      wallMaterial
+      wallMaterial.clone()
     );
     eastWall.position.set(10, 2, 0);
     eastWall.rotation.y = -Math.PI / 2;
@@ -243,24 +253,25 @@ const InteractiveGallery = () => {
 
     const westWall = new THREE.Mesh(
       new THREE.PlaneGeometry(20, 4),
-      wallMaterial
+      wallMaterial.clone()
     );
     westWall.position.set(-10, 2, 0);
     westWall.rotation.y = Math.PI / 2;
     westWall.receiveShadow = true;
     scene.add(westWall);
 
-    // Ceiling
+    // Bright white ceiling
     const ceilingGeometry = new THREE.PlaneGeometry(20, 20);
     const ceilingMaterial = new THREE.MeshStandardMaterial({ 
       color: 0xffffff,
-      roughness: 0.9,
-      side: THREE.DoubleSide
+      roughness: 0.7,
+      side: THREE.DoubleSide,
+      emissive: 0xffffff,
+      emissiveIntensity: 0.1
     });
     const ceiling = new THREE.Mesh(ceilingGeometry, ceilingMaterial);
     ceiling.rotation.x = Math.PI / 2;
     ceiling.position.y = 4;
-    ceiling.receiveShadow = true;
     scene.add(ceiling);
 
     const paintings = distributePaintingsOnWalls(floors[currentFloor].images);
@@ -314,6 +325,89 @@ const InteractiveGallery = () => {
     const onMouseUp = () => {
       mouseStateRef.current.isDragging = false;
     };
+     // Touch controls for mobile/tablet
+    const touchStateRef = { initialDistance: 0, lastTouches: [] };
+
+    const onTouchStart = (event) => {
+      if (event.target.closest('button')) return;
+      
+      if (event.touches.length === 1) {
+        // Single touch - drag to look around
+        mouseStateRef.current.isDragging = true;
+        mouseStateRef.current.lastX = event.touches[0].clientX;
+        mouseStateRef.current.lastY = event.touches[0].clientY;
+        touchStateRef.lastTouches = Array.from(event.touches);
+      } else if (event.touches.length === 2) {
+        // Two finger pinch - zoom
+        const dx = event.touches[0].clientX - event.touches[1].clientX;
+        const dy = event.touches[0].clientY - event.touches[1].clientY;
+        touchStateRef.initialDistance = Math.sqrt(dx * dx + dy * dy);
+        touchStateRef.lastTouches = Array.from(event.touches);
+        mouseStateRef.current.isDragging = false;
+      }
+    };
+
+    const onTouchMove = (event) => {
+      event.preventDefault();
+      
+      if (event.touches.length === 1 && mouseStateRef.current.isDragging) {
+        // Single touch drag - look around
+        const touch = event.touches[0];
+        const deltaX = touch.clientX - mouseStateRef.current.lastX;
+        const deltaY = touch.clientY - mouseStateRef.current.lastY;
+
+        rotationRef.current.yaw -= deltaX * 0.005;
+        rotationRef.current.pitch -= deltaY * 0.005;
+        rotationRef.current.pitch = Math.max(-Math.PI / 3, Math.min(Math.PI / 3, rotationRef.current.pitch));
+
+        mouseStateRef.current.lastX = touch.clientX;
+        mouseStateRef.current.lastY = touch.clientY;
+      
+      } else if (event.touches.length === 2) {
+        // Two finger pinch/zoom
+        const dx = event.touches[0].clientX - event.touches[1].clientX;
+        const dy = event.touches[0].clientY - event.touches[1].clientY;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        
+        if (touchStateRef.initialDistance > 0) {
+          const delta = distance - touchStateRef.initialDistance;
+          const zoomSpeed = 0.01;
+          // Adjust FOV for zoom effect
+        
+          if (cameraRef.current) {
+            const newFov = cameraRef.current.fov - delta * zoomSpeed;
+            cameraRef.current.fov = Math.max(30, Math.min(90, newFov));
+            cameraRef.current.updateProjectionMatrix();
+          }
+        }
+        touchStateRef.initialDistance = distance;
+      }
+    };
+
+    const onTouchEnd = (event) => {
+      if (event.touches.length === 0) {
+        mouseStateRef.current.isDragging = false;
+        touchStateRef.initialDistance = 0;
+        touchStateRef.lastTouches = [];
+      } else if (event.touches.length === 1) {
+        // Reset to single touch
+        mouseStateRef.current.lastX = event.touches[0].clientX;
+        mouseStateRef.current.lastY = event.touches[0].clientY;
+        touchStateRef.initialDistance = 0;
+      }
+    };
+
+    const onWheel = (event) => {
+      event.preventDefault();
+      // Mouse wheel zoom
+      const zoomSpeed = 0.05;
+      if (cameraRef.current) {
+        const delta = event.deltaY > 0 ? 1 : -1;
+        const newFov = cameraRef.current.fov + delta * zoomSpeed * 10;
+        cameraRef.current.fov = Math.max(30, Math.min(90, newFov));
+        cameraRef.current.updateProjectionMatrix();
+      }
+    };
 
     const onKeyDown = (event) => {
       switch(event.key.toLowerCase()) {
@@ -343,6 +437,12 @@ const InteractiveGallery = () => {
     window.addEventListener('mouseup', onMouseUp);
     window.addEventListener('keydown', onKeyDown);
     window.addEventListener('keyup', onKeyUp);
+    window.addEventListener('wheel', onWheel, { passive: false });
+  
+    // Touch event listeners for mobile
+    renderer.domElement.addEventListener('touchstart', onTouchStart, { passive: false });
+    renderer.domElement.addEventListener('touchmove', onTouchMove, { passive: false });
+    renderer.domElement.addEventListener('touchend', onTouchEnd, { passive: false });
 
     // Animation loop
     const animate = () => {
@@ -394,6 +494,14 @@ const InteractiveGallery = () => {
       window.removeEventListener('keydown', onKeyDown);
       window.removeEventListener('keyup', onKeyUp);
       window.removeEventListener('resize', handleResize);
+      
+      // Remove touch listeners
+      if (renderer.domElement) {
+        renderer.domElement.removeEventListener('touchstart', onTouchStart);
+        renderer.domElement.removeEventListener('touchmove', onTouchMove);
+        renderer.domElement.removeEventListener('touchend', onTouchEnd);
+      }
+
       if (mountRef.current && renderer.domElement) {
         mountRef.current.removeChild(renderer.domElement);
       }
@@ -414,6 +522,15 @@ const InteractiveGallery = () => {
         sceneRef.current.remove(light.target);
       }
     });
+
+    // // Update wall colors
+    // const newWallColor = galleryData[currentFloor].wallColor;
+    // wallsRef.current.forEach(wall => {
+    //   if (wall.material) {
+    //     wall.material.color.setHex(newWallColor);
+    //   }
+    // });
+
     paintingsRef.current = [];
     lightsRef.current = [];
 
@@ -491,7 +608,7 @@ const InteractiveGallery = () => {
 
   const createGalleryLights = (scene, paintings) => {
     paintings.forEach(painting => {
-      const spotlight = new THREE.SpotLight(0xffffff, 1.0);
+      const spotlight = new THREE.SpotLight(0xffffff, 1.8);
       
       let lightPos;
       if (painting.wall === 'north') {
@@ -506,25 +623,27 @@ const InteractiveGallery = () => {
       
       spotlight.position.copy(lightPos);
       spotlight.target.position.set(painting.x, painting.y, painting.z);
-      spotlight.angle = Math.PI / 8;
-      spotlight.penumbra = 0.4;
-      spotlight.decay = 2;
-      spotlight.distance = 10;
+      spotlight.angle = Math.PI / 7;
+      spotlight.penumbra = 0.3;
+      spotlight.decay = 1.5;
+      spotlight.distance = 12;
       spotlight.castShadow = true;
-      spotlight.shadow.mapSize.width = 512;
-      spotlight.shadow.mapSize.height = 512;
+      spotlight.shadow.mapSize.width = 1024;
+      spotlight.shadow.mapSize.height = 1024;
       spotlight.shadow.bias = -0.0001;
 
       scene.add(spotlight);
       scene.add(spotlight.target);
       lightsRef.current.push(spotlight);
 
-      const fixtureGeometry = new THREE.CylinderGeometry(0.05, 0.08, 0.15, 8);
+      // Light fixture
+      const fixtureGeometry = new THREE.CylinderGeometry(0.06, 0.09, 0.2, 12);
       const fixtureMaterial = new THREE.MeshStandardMaterial({ 
-        color: 0x333333,
-        metalness: 0.8,
-        roughness: 0.2,
-        emissive: 0x222222
+        color: 0x1a1a1a,
+        metalness: 0.9,
+        roughness: 0.1,
+        emissive: 0x333333,
+        emissiveIntensity: 0.2
       });
       const fixture = new THREE.Mesh(fixtureGeometry, fixtureMaterial);
       fixture.position.copy(lightPos);
@@ -544,9 +663,9 @@ const InteractiveGallery = () => {
         frameDepth
       );
       const frameMaterial = new THREE.MeshStandardMaterial({ 
-        color: 0x654321,
-        roughness: 0.5,
-        metalness: 0.3
+        color: 0x7d6d5f,
+        roughness: 0.9,
+        metalness: 0.0
       });
       const frame = new THREE.Mesh(frameGeometry, frameMaterial);
       frame.castShadow = true;
